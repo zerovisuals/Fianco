@@ -7,7 +7,7 @@ import { MiniBoard } from './MiniBoard';
 import { library, useLibrary, gameId, type SavedGame } from './library';
 import { moveSound, chime, soundOn, setSoundOn } from './sound';
 import { Board, EvalBar, type Arrow } from './Board';
-import { Timeline } from './Timeline';
+import { Timeline, MoveStrip } from './Timeline';
 import { Scorecard } from './Scorecard';
 import { ClassIcon } from './icons';
 import { LABELS, KEY, type Label } from './labels';
@@ -190,6 +190,7 @@ function ReviewView({ review, initialPly = -1 }: { review: Review; initialPly?: 
           <button className="tool" onClick={() => setFlipped((f) => !f)} aria-label="Flip board" title="Flip board (F)"><ArrowsDownUp size={17} weight="bold" /></button>
           <button className="tool" onClick={() => { setSoundOn(!sound); setSound(!sound); }} aria-label={sound ? 'Mute move sounds' : 'Turn on move sounds'} aria-pressed={sound}>{sound ? <SpeakerHigh size={17} weight="bold" /> : <SpeakerSlash size={17} weight="bold" />}</button>
         </PlayerRow>
+        <MoveStrip moves={review.moves} ply={ply} onPick={go} ending={endInfo} />
       </section>
       <aside className="side">
         <div className="under">

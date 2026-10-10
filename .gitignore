@@ -32,3 +32,4 @@ showcase/
 # sound audition page (temporary)
 app/public/audition/
 scripts/analyze-site.ts
+scripts/reanalyze-site.ts

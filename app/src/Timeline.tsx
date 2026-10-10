@@ -74,3 +74,27 @@ export function Timeline({ moves, ply, onPick, focus, ending }: { moves: Move[];
     </div>
   );
 }
+
+/** Phones and narrow screens: the move list as one horizontal strip under the board; the current move stays in view. */
+export function MoveStrip({ moves, ply, onPick, ending }: { moves: Move[]; ply: number; onPick: (i: number) => void; ending?: Ending | null }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = ref.current, el = box?.querySelector<HTMLElement>(`[data-ply="${ply}"]`);
+    if (!box) return;
+    if (!el) { box.scrollTo({ left: 0, behavior: 'smooth' }); return; }
+    box.scrollTo({ left: el.offsetLeft - box.clientWidth / 2 + el.offsetWidth / 2, behavior: 'smooth' });
+  }, [ply]);
+  return (
+    <div className="strip" ref={ref} role="list" aria-label="Moves">
+      {moves.map((m, i) => (
+        <button key={i} role="listitem" data-ply={i} className={`st-move${ply === i ? ' cur' : ''}`} onClick={() => onPick(i)}
+          style={KEY.includes(m.label) ? { color: LABELS[m.label].color } : undefined}>
+          {m.color === 'w' && <span className="st-num">{i / 2 + 1}.</span>}
+          {!['good', 'excellent', 'forced', 'best'].includes(m.label) && <ClassIcon label={m.label} size={14} />}
+          <span className="st-san">{m.san}</span>
+        </button>
+      ))}
+      {ending && <span className="st-end">{ending.winner === 'w' ? '1-0' : ending.winner === 'b' ? '0-1' : '½-½'}</span>}
+    </div>
+  );
+}
