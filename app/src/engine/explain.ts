@@ -28,7 +28,6 @@ export function explain(m: Move): { headline: string; why: string[]; numbers: st
     case 'brilliant': {
       const sac = Number(m.sub?.match(/\d+/)?.[0] ?? 0);
       why.push(`Offers ${sac} point${sac === 1 ? '' : 's'} of material, and the engine says it works.`);
-      why.push('You were not already winning without it.');
       break;
     }
     case 'great': why.push('The other moves give away much more. This one keeps the game on track.'); break;

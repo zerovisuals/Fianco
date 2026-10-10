@@ -38,9 +38,11 @@ with sync_playwright() as p:
     pg.goto('http://localhost:5180/#/review'); pg.evaluate("localStorage.removeItem('fianco:last')"); pg.reload(); pg.wait_for_timeout(1200)
     pg.click('textarea'); pg.keyboard.insert_text(PGN); pg.wait_for_timeout(900)
     pg.click('button:has-text("Review")'); pg.wait_for_selector('.scorecard', timeout=300000); pg.wait_for_timeout(2500)
-    for _ in range(9): pg.keyboard.press('Space'); pg.wait_for_timeout(2600)   # ends on 16.Qb8+!!
-    pg.click('.why-btn'); pg.wait_for_timeout(3200)
-    for _ in range(2): pg.keyboard.press('ArrowRight'); pg.wait_for_timeout(2200)  # Nxb8, Rd8#
+    # Story beats of the Opera Game, clicked in the move list.
+    for ply, hold in [(18, 2600), (22, 2600), (24, 3200), (28, 2600), (30, 2400)]:
+        pg.click(f'[data-ply="{ply}"]'); pg.wait_for_timeout(hold)
+    pg.click('.why-btn'); pg.wait_for_timeout(3400)
+    pg.click('[data-ply="32"]'); pg.wait_for_timeout(2800)
     save(c, pg, 'review')
     b.close()
 print('ok', [f.name for f in RAW.glob('*.webm')])
