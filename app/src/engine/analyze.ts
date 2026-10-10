@@ -63,6 +63,22 @@ function engineCount() {
   return Math.max(1, Math.min(mobile ? 2 : 6, cores - 1, Math.floor(mem)));
 }
 
+/**
+ * Download the engine's WASM once, with progress, before any worker starts. The workers then load it from
+ * the HTTP cache instead of each fetching 7 MB at the same time (which looked like a hang at 0% on slow links).
+ */
+const WASM = '/engine/stockfish-17.1-lite-single-03e3232.wasm';
+let wasmP: Promise<void> | null = null;
+function preloadEngine(onBytes: (got: number, total: number) => void) {
+  return (wasmP ??= (async () => {
+    const r = await fetch(WASM, { cache: 'force-cache' });
+    const total = Number(r.headers.get('content-length')) || 7_280_741;
+    if (!r.body) { await r.arrayBuffer(); return; }
+    const rd = r.body.getReader(); let got = 0;
+    for (;;) { const { done, value } = await rd.read(); if (done) break; got += value.length; onBytes(got, total); }
+  })().catch((e) => { wasmP = null; throw e; }));
+}
+
 let bookP: Promise<Set<string>> | null = null;
 const loadBook = () => (bookP ??= Promise.all('abcde'.split('').map((f) => fetch(`/openings/openings-${f}.tsv`).then((r) => r.text()))).then(buildBook));
 
@@ -71,7 +87,7 @@ const whiteCp = (s: Score, c: 'w' | 'b') => { const v = s.mate !== undefined ? (
 const san = (fen: string, uci: string) => { try { return new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }).san; } catch { return uci; } };
 const pvSan = (fen: string, pv: string[]) => { const c = new Chess(fen); const out: string[] = []; for (const u of pv.slice(0, 6)) { try { out.push(c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] }).san); } catch { break; } } return out; };
 
-export async function analyzePgn(pgn: string, opts: { strength: Strength; onProgress: (p: number) => void; signal?: AbortSignal }): Promise<Review> {
+export async function analyzePgn(pgn: string, opts: { strength: Strength; onProgress: (p: number) => void; onStage?: (s: string | null) => void; signal?: AbortSignal }): Promise<Review> {
   const chess = new Chess();
   chess.loadPgn(pgn);
   const hist = chess.history({ verbose: true });
@@ -86,11 +102,17 @@ export async function analyzePgn(pgn: string, opts: { strength: Strength; onProg
     if (new Chess(fen).isGameOver()) break;
   }
   const plies: Ply[] = new Array(fens.length);
+  const mb = (x: number) => (x / 1048576).toFixed(1);
+  opts.onStage?.('Loading the engine');
+  await preloadEngine((got, total) => opts.onStage?.(`Loading the engine ${mb(got)} / ${mb(total)} MB`))
+    .catch(() => { throw new Error('Could not download the chess engine. Check your connection and try again.'); });
+  opts.onStage?.('Starting the engine');
   // Start the engines; keep the ones that load. Only fail if none do.
   const started = Array.from({ length: engineCount() }, () => new BrowserEngine());
   const alive = (await Promise.allSettled(started.map((e) => e.ready(20000)))).flatMap((r, i) => (r.status === 'fulfilled' ? [started[i]] : (started[i].stop(), [])));
   if (opts.signal?.aborted) { alive.forEach((w) => w.stop()); throw new DOMException('Cancelled', 'AbortError'); }
   if (!alive.length) throw new Error('The chess engine could not start in this browser. Try Chrome or Firefox, or turn off strict blocking for this site.');
+  opts.onStage?.(null);
   let next = 0, done = 0;
   const partial = new Map<BrowserEngine, number>();
   const report = () => opts.onProgress(Math.min(1, (done + [...partial.values()].reduce((a, b) => a + b, 0)) / fens.length));

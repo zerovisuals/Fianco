@@ -68,12 +68,12 @@ function Import({ onPgn, initial }: { onPgn: (pgn: string, me?: string) => void;
 }
 
 /* ---------- analysing ---------- */
-function Analysing({ progress, onCancel }: { progress: number; onCancel: () => void }) {
+function Analysing({ progress, stage, onCancel }: { progress: number; stage: string | null; onCancel: () => void }) {
   return (
     <div className="analysing">
       <div className="an-board">{Array.from({ length: 64 }, (_, i) => <span key={i} className={(i + Math.floor(i / 8)) % 2 ? 'd' : 'l'} style={{ opacity: i / 64 < progress ? 1 : 0.35 }} />)}</div>
       <div className="an-bar"><motion.span animate={{ scaleX: progress }} transition={{ ease: 'linear', duration: 0.2 }} /></div>
-      <p>Reviewing {Math.round(progress * 100)}%. The engine runs on your computer.</p>
+      <p>{stage ? `${stage}…` : `Reviewing ${Math.round(progress * 100)}%.`} The engine runs on your computer.</p>
       <button className="pill line" onClick={onCancel}>Cancel</button>
     </div>
   );
@@ -307,6 +307,7 @@ export default function App() {
   const [strength, setStrength] = useState<Strength>('standard');
   const [err, setErr] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const [stage, setStage] = useState<string | null>(null);
   const [libOpen, setLibOpen] = useState(false);
   const [openAt, setOpenAt] = useState({ ply: -1, n: 0 });
   const openSaved = useCallback((g: SavedGame, ply = -1) => {
@@ -315,11 +316,11 @@ export default function App() {
   }, []);
 
   const run = useCallback(async (pgn: string, me?: string) => {
-    setErr(null); setProgress(0); setMode('analysing');
+    setErr(null); setProgress(0); setStage(null); setMode('analysing');
     abort.current = new AbortController();
     const signal = abort.current.signal;
     try {
-      const r = await analyzePgn(pgn, { strength, onProgress: setProgress, signal });
+      const r = await analyzePgn(pgn, { strength, onProgress: setProgress, onStage: setStage, signal });
       if (signal.aborted) return;
       const meLc = me?.toLowerCase();
       if (meLc) r.meta = { ...r.meta, me: r.black.name.toLowerCase() === meLc ? 'b' : 'w' };
@@ -353,7 +354,7 @@ export default function App() {
       </header>
       {err && mode === 'import' && <p className="err top" role="alert">{err}</p>}
       {mode === 'import' && <Import onPgn={run} initial={initial && !isPgn(initial) ? initial : undefined} />}
-      {mode === 'analysing' && <Analysing progress={progress} onCancel={() => { abort.current?.abort(); setMode('import'); }} />}
+      {mode === 'analysing' && <Analysing progress={progress} stage={stage} onCancel={() => { abort.current?.abort(); setMode('import'); }} />}
       {mode === 'review' && review && <ReviewView key={gameId(review) + openAt.n} review={review} initialPly={openAt.ply} />}
       <AnimatePresence>{libOpen && <LibraryPanel onOpen={openSaved} onClose={() => setLibOpen(false)} />}</AnimatePresence>
     </div>
