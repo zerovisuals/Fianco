@@ -1,0 +1,61 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+/* Fianco tokens. Monochrome paper; colour only for move labels. */
+:root {
+  --ink: #0b0b0b; --graphite: #666; --smoke: #8f8f8f; --paper: #fff; --ash: #f1f1f1; --hair: rgba(0,0,0,.12); --whisper: rgba(0,0,0,.04);
+  --sq-l: #f3f2ee; --sq-d: #cfcdc6;
+  --brilliant: #26c2a3; --great: #749bbf; --best: #81b64c; --excellent: #81b64c; --good: #95b776; --book: #c9a17a;
+  --inaccuracy: #f7c631; --mistake: #ffa459; --miss: #ff7769; --blunder: #fa412d; --forced: #97af8b;
+  --sans: 'Geist Variable', system-ui, sans-serif; --mono: 'Geist Mono Variable', ui-monospace, monospace;
+  --ease-out: cubic-bezier(.16, 1, .3, 1); --ease-io: cubic-bezier(.65, 0, .35, 1);
+  color-scheme: light;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body, #root { min-height: 100%; }
+body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-feature-settings: 'calt', 'liga', 'tnum'; -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
+.mono { font-family: var(--mono); }
+
+/* Pills: one filled (ink) action per view, everything else hairline or ghost. */
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: 999px; font-size: 14px; font-weight: 500; white-space: nowrap; transition: transform .2s var(--ease-out), background .2s, box-shadow .2s; }
+.pill.fill { background: var(--ink); color: #fff; }
+.pill.fill:hover { background: #2a2a2a; }
+.pill.line { box-shadow: inset 0 0 0 1px var(--hair); }
+.pill.line:hover { background: var(--whisper); }
+.pill:active { transform: scale(.97); }
+
+/* Liquid glass: an approximation of Apple's material for the web (blur + saturation + edge light).
+   One light source, top-left. Used only where it sits over content it can bend. */
+.glass {
+  position: relative; isolation: isolate;
+  background: rgba(255,255,255,.34);
+  -webkit-backdrop-filter: blur(10px) saturate(1.8) brightness(1.05);
+  backdrop-filter: blur(10px) saturate(1.8) brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95), inset 1px 0 0 rgba(255,255,255,.5),
+    inset 0 -1px 0 rgba(0,0,0,.07), inset 0 0 0 1px rgba(255,255,255,.28),
+    0 1px 1px rgba(0,0,0,.05), 0 14px 34px -16px rgba(0,0,0,.28);
+}
+.glass::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: radial-gradient(120% 70% at 20% 0%, rgba(255,255,255,.6), rgba(255,255,255,0) 50%); mix-blend-mode: soft-light; }
+@media (prefers-reduced-transparency: reduce) { .glass { background: rgba(255,255,255,.96); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+
+/* Label marble */
+.marble { position: relative; flex: none; display: inline-grid; place-items: center; border-radius: 50%; color: #fff; background: var(--c);
+  box-shadow: inset 0 2px 1px rgba(255,255,255,.6), inset 0 -3px 7px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.22), 0 6px 14px -6px color-mix(in oklab, var(--c) 70%, black); }
+.marble::after { content: ''; position: absolute; left: 15%; top: 7%; width: 44%; height: 32%; border-radius: 50%; background: rgba(255,255,255,.4); filter: blur(1px); }
+.marble svg { position: relative; z-index: 1; }
+.marble .g { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; font-weight: 700; line-height: 1; font-feature-settings: 'liga' 0, 'calt' 0; }
+.marble.small::after, .marble.small { box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 2px rgba(0,0,0,.15); }
+
+/* Mini board */
+.mini { display: grid; position: relative; }
+.mini .q { position: relative; }
+.mini .q img { position: absolute; inset: 3%; width: 94%; height: 94%; user-select: none; -webkit-user-drag: none; }
+.mini .q .mk { position: absolute; inset: 0; opacity: .42; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; } }

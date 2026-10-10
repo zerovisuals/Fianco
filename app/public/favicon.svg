@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>.i{fill:#0b0b0b}.p{fill:#fff}.s{fill:none;stroke:#0b0b0b}@media (prefers-color-scheme:dark){.i{fill:#fff}.p{fill:#0b0b0b}.s{stroke:#fff}}</style>
+  <rect x="2" y="2" width="28" height="28" rx="8" class="p"/>
+  <path class="i" d="M16 2h6a8 8 0 0 1 8 8v6H16Z"/>
+  <path class="i" d="M2 16h14v14h-6a8 8 0 0 1-8-8Z"/>
+  <rect x="2.75" y="2.75" width="26.5" height="26.5" rx="7.25" stroke-width="1.5" class="s"/>
+</svg>

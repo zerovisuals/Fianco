@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fianco · Free, unlimited chess game review</title>
+    <meta name="description" content="Review every chess game for free, without limits. Every move labelled brilliant to blunder, accuracy, game rating and the best line. Runs in your browser. Works with chess.com usernames and any PGN." />
+    <link rel="canonical" href="https://fianco.app/" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Fianco" />
+    <meta property="og:title" content="Fianco · Free, unlimited chess game review" />
+    <meta property="og:description" content="Every move has a name. Free, unlimited game review with move labels, accuracy and game rating, right in your browser." />
+    <meta property="og:url" content="https://fianco.app/" />
+    <meta property="og:image" content="https://fianco.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Fianco: Every move has a name." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Fianco · Free, unlimited chess game review" />
+    <meta name="twitter:description" content="Every move has a name. Free, unlimited game review in your browser." />
+    <meta name="twitter:image" content="https://fianco.app/og.png" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Fianco",
+      "url": "https://fianco.app/",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any (web browser)",
+      "description": "Free, unlimited chess game review. Every move labelled from brilliant to blunder, with accuracy, game rating and the best line. The engine runs in your browser.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+      "featureList": ["Unlimited game reviews", "Move labels from brilliant to blunder", "Accuracy and game rating", "Best line and explanations", "chess.com username and PGN import"]
+    }
+    </script>
+  </head>
+  <body>
+    <!-- Readable content for crawlers and no-JS visitors; React replaces it on load. -->
+    <div id="root">
+      <main style="max-width:720px;margin:80px auto;padding:0 16px;font-family:system-ui,sans-serif;line-height:1.6">
+        <h1>Fianco: free, unlimited chess game review</h1>
+        <p>Every move has a name. Paste a PGN or type your chess.com username and get a full review: every move labelled brilliant, great, best, excellent, good, book, inaccuracy, mistake, miss or blunder, plus accuracy, game rating and the best line. The Stockfish engine runs in your browser, so there is no daily limit.</p>
+        <h2>What we fixed about game review</h2>
+        <ul>
+          <li>Unlimited reviews, free for everyone.</li>
+          <li>Your move and the best move shown together.</li>
+          <li>The evaluation graph stays visible for the whole review.</li>
+          <li>Every label explains itself.</li>
+          <li>The same answer every time.</li>
+          <li>Any game: chess.com username or PGN.</li>
+        </ul>
+        <p><a href="/#/review">Review a game</a></p>
+      </main>
+    </div>
+    <noscript><p style="text-align:center">Fianco needs JavaScript to run the chess engine in your browser.</p></noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

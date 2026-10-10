@@ -1,0 +1,29 @@
+# deps / builds
+node_modules/
+dist/
+*.log
+
+# Private research: chess.com captures, their opening book and protobuf schemas,
+# the capture userscript, corpora and fitting data. Never publish these.
+research/
+compare/features.json
+compare/fit-*.json
+data/book-chesscom-ref.json
+scripts/decode-captures.mjs
+
+# design working files
+brand/board-png/
+brand/site-png/
+app/public/brand/
+
+# local tooling
+.claude/
+.env
+.env.*
+!.env.example
+
+# private: model-fitting tooling against chess.com captures, spec and business plan
+compare/
+scripts/analyze-chesscom.ts
+SPEC.md
+LAUNCH.md
