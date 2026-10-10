@@ -123,7 +123,7 @@ function ReviewView({ review }: { review: Review }) {
     <main className="stage">
       <Timeline moves={review.moves} ply={ply} onPick={go} focus={focus} />
       <section className="center">
-        <div className="player"><Avatar p={top} c={flipped ? 'w' : 'b'} /><b>{top.name}</b><span className="elo">{top.elo}</span></div>
+        <div className="player"><Avatar p={top} c={flipped ? 'w' : 'b'} /><b>{top.name}</b>{top.elo > 0 && <span className="elo">{top.elo}</span>}</div>
         <div className="board-wrap">
           <EvalBar evalWhite={cur ? cur.evalWhite : 20} flipped={flipped} />
           <div className="board-holder">
@@ -143,7 +143,7 @@ function ReviewView({ review }: { review: Review }) {
             </AnimatePresence>
           </div>
         </div>
-        <div className="player"><Avatar p={bottom} c={flipped ? 'b' : 'w'} /><b>{bottom.name}</b><span className="elo">{bottom.elo}</span></div>
+        <div className="player"><Avatar p={bottom} c={flipped ? 'b' : 'w'} /><b>{bottom.name}</b>{bottom.elo > 0 && <span className="elo">{bottom.elo}</span>}</div>
 
         <div className="under">
           {cur && cur.bestLine && cur.bestLine.length > 0 && cur.label !== 'book' && (

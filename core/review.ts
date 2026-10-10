@@ -24,6 +24,8 @@ export type Ply = {
   fen: string; over?: boolean; mate?: boolean;
   lines?: { score: Score; pv: string[] }[];
   played?: { uci: string; san: string; clock?: string | null } | null;
+  /** Score of the played move searched from this same position (mover's view). Preferred over the next position's eval. */
+  playedScore?: Score;
 };
 
 const VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
@@ -110,8 +112,9 @@ export function movesFromPlies(plies: Ply[]): MoveEval[] {
     if (!P.played || !P.lines?.length) continue;
     const color = P.fen.split(' ')[1] as Color;
     let played: Score;
-    if (!N) played = P.lines[0].score;
-    else if (N.over) played = N.mate ? { mate: 1 } : { cp: 0 };
+    if (N?.over) played = N.mate ? { mate: 1 } : { cp: 0 };
+    else if (P.playedScore) played = P.playedScore;
+    else if (!N) played = P.lines[0].score;
     else played = neg(N.lines![0].score);
     const clk = P.played.clock?.split(':').map(Number);
     out.push({
@@ -200,8 +203,16 @@ export function classify(moves: MoveEval[], elos: Record<Color, number>, cfg: Co
 
     out.push({ ...m, label, sub, epBest, epPlayed, loss, moveAccuracy: null, phase });
   }
+  // Accuracy uses its own win curve (fitted separately from the label curve).
   const a = cfg.accuracy;
-  for (const r of out) if (r.label !== 'book' && r.label !== 'forced') r.moveAccuracy = Math.max(a.floor, Math.min(100, a.a * Math.exp(-a.b * r.loss) - a.c));
+  const cpOf = (s: Score) => Math.max(-a.clipCp, Math.min(a.clipCp, s.mate !== undefined ? (s.mate > 0 ? 10000 : -10000) : s.cp ?? 0));
+  for (const r of out) {
+    if (r.label === 'forced') continue;
+    const k = a.k0 + a.k1 * (elos[r.color] - 1500) / 1000;
+    const wp = (s: Score) => 1 / (1 + Math.exp(-k * cpOf(s) / 100));
+    const lost = r.uci === r.best.uci ? 0 : Math.max(0, wp(r.best.score) - wp(r.played.score)) * 100;
+    r.moveAccuracy = Math.max(0.5, Math.min(100, a.a * Math.exp(-a.b * lost) - a.c));
+  }
   return out;
 }
 
@@ -213,6 +224,14 @@ export function powerMean(xs: number[], p: number) {
   if (!xs.length) return null;
   if (Math.abs(p) < 1e-6) return Math.exp(xs.reduce((s, x) => s + Math.log(Math.max(x, 1e-3)), 0) / xs.length);
   return Math.pow(xs.reduce((s, x) => s + Math.pow(Math.max(x, 1e-3), p), 0) / xs.length, 1 / p);
+}
+
+/** Game rating estimate (v1). Without Elos it falls back to an accuracy-only fit and is marked approximate. */
+export function gameRating(acc: number | null, elo: number | null, opp: number | null, cfg: Config): { value: number; approx: boolean } | null {
+  if (acc === null) return null;
+  const r = cfg.rating;
+  const raw = elo && opp ? r.bias + r.acc * acc + r.elo * elo + r.opp * opp + r.accElo * acc * elo / 1000 : r.accOnly.bias + r.accOnly.acc * acc;
+  return { value: Math.max(100, Math.min(3200, Math.round(raw / 50) * 50)), approx: !(elo && opp) };
 }
 
 export function accuracy(moves: MoveReview[], color: Color, cfg: Config, phase?: 0 | 1 | 2) {

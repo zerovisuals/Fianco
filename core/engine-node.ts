@@ -35,7 +35,7 @@ export class Engine {
   async ready() { this.send('isready'); await this.wait((l) => l === 'readyok'); }
 
   /** Analyse a FEN. Scores are from the side to move. */
-  async analyse(fen: string, opts: { depth?: number; nodes?: number; multipv?: number } = {}) {
+  async analyse(fen: string, opts: { depth?: number; nodes?: number; multipv?: number; searchmoves?: string } = {}) {
     const multipv = opts.multipv ?? 1;
     this.send(`setoption name MultiPV value ${multipv}`);
     await this.ready();
@@ -50,7 +50,7 @@ export class Engine {
     };
     this.listeners.push(onLine);
     this.send(`position fen ${fen}`);
-    this.send(opts.nodes ? `go nodes ${opts.nodes}` : `go depth ${opts.depth ?? 18}`);
+    this.send((opts.nodes ? `go nodes ${opts.nodes}` : `go depth ${opts.depth ?? 18}`) + (opts.searchmoves ? ` searchmoves ${opts.searchmoves}` : ''));
     const best = await this.wait((l) => l.startsWith('bestmove'));
     this.listeners.splice(this.listeners.indexOf(onLine), 1);
     return { bestmove: best.split(' ')[1], lines: [...lines.values()].sort((a, b) => a.multipv - b.multipv) };

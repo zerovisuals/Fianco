@@ -12,5 +12,6 @@ export type Review = {
   accuracy: { w: number | null; b: number | null };
   phaseAccuracy: { w: (number | null)[]; b: (number | null)[] };
   rating?: { w: number; b: number } | null;
+  ratingEst?: { w: { value: number; approx: boolean } | null; b: { value: number; approx: boolean } | null };
   meta?: { result?: string; date?: string; timeControl?: string; opening?: string; strength?: string; depth?: number; site?: string; me?: 'w' | 'b' };
 };
