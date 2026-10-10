@@ -178,8 +178,10 @@ export default function App() {
   const run = useCallback(async (pgn: string, me?: string) => {
     setErr(null); setProgress(0); setMode('analysing');
     abort.current = new AbortController();
+    const signal = abort.current.signal;
     try {
-      const r = await analyzePgn(pgn, { strength, onProgress: setProgress, signal: abort.current.signal });
+      const r = await analyzePgn(pgn, { strength, onProgress: setProgress, signal });
+      if (signal.aborted) return;
       const meLc = me?.toLowerCase();
       if (meLc) r.meta = { ...r.meta, me: r.black.name.toLowerCase() === meLc ? 'b' : 'w' };
       if (/chess\.com/i.test(r.meta?.site ?? '')) {
@@ -188,6 +190,7 @@ export default function App() {
       }
       setReview(r); store.set('fianco:last', JSON.stringify(r)); setMode('review');
     } catch (e) {
+      if (signal.aborted) return; // Cancel already returned to the import screen; a newer run may be going.
       if ((e as Error).name !== 'AbortError') setErr((e as Error).message || 'Could not read that game.');
       setMode('import');
     }
@@ -209,7 +212,7 @@ export default function App() {
       </header>
       {err && mode === 'import' && <p className="err top" role="alert">{err}</p>}
       {mode === 'import' && <Import onPgn={run} initial={initial && !isPgn(initial) ? initial : undefined} />}
-      {mode === 'analysing' && <Analysing progress={progress} onCancel={() => abort.current?.abort()} />}
+      {mode === 'analysing' && <Analysing progress={progress} onCancel={() => { abort.current?.abort(); setMode('import'); }} />}
       {mode === 'review' && review && <ReviewView key={review.startFen + review.moves.length + review.white.name} review={review} />}
     </div>
   );

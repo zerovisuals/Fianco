@@ -88,6 +88,7 @@ export async function analyzePgn(pgn: string, opts: { strength: Strength; onProg
   // Start the engines; keep the ones that load. Only fail if none do.
   const started = Array.from({ length: engineCount() }, () => new BrowserEngine());
   const alive = (await Promise.allSettled(started.map((e) => e.ready(20000)))).flatMap((r, i) => (r.status === 'fulfilled' ? [started[i]] : (started[i].stop(), [])));
+  if (opts.signal?.aborted) { alive.forEach((w) => w.stop()); throw new DOMException('Cancelled', 'AbortError'); }
   if (!alive.length) throw new Error('The chess engine could not start in this browser. Try Chrome or Firefox, or turn off strict blocking for this site.');
   let next = 0, done = 0;
   const partial = new Map<BrowserEngine, number>();
@@ -108,9 +109,11 @@ export async function analyzePgn(pgn: string, opts: { strength: Strength; onProg
       partial.delete(engine); done++; report();
     }
   };
-  const onAbort = () => alive.forEach((w) => w.stop());
-  opts.signal?.addEventListener('abort', onAbort);
-  try { await Promise.all(alive.map(job)); } finally { opts.signal?.removeEventListener('abort', onAbort); alive.forEach((w) => w.stop()); }
+  // Cancel stops the engines and rejects right away, without waiting for the position being searched.
+  let onAbort = () => {};
+  const aborted = new Promise<never>((_, rej) => { onAbort = () => { alive.forEach((w) => w.stop()); rej(new DOMException('Cancelled', 'AbortError')); }; });
+  if (opts.signal?.aborted) onAbort(); else opts.signal?.addEventListener('abort', onAbort);
+  try { await Promise.race([Promise.all(alive.map(job)), aborted]); } finally { opts.signal?.removeEventListener('abort', onAbort); alive.forEach((w) => w.stop()); }
 
   const realW = Number(tag(pgn, 'WhiteElo')) || null, realB = Number(tag(pgn, 'BlackElo')) || null;
   const elos = { w: realW ?? 1500, b: realB ?? 1500 };
