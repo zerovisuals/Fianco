@@ -7,7 +7,7 @@
 **Every move has a name.**<br />
 Free, unlimited chess game review that runs in your browser.
 
-[**fianco.app**](https://fianco.app) &nbsp;·&nbsp; [Review a game](https://fianco.app/#/review) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Run it locally](#run-it-locally)
+[**fianco.app**](https://fianco.vercel.app/) &nbsp;·&nbsp; [Review a game](https://fianco.app/#/review) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Run it locally](#run-it-locally)
 
 ![price](https://img.shields.io/badge/review-free%20forever-0b0b0b?style=flat-square)
 ![engine](https://img.shields.io/badge/engine-Stockfish%2017.1%20WASM-0b0b0b?style=flat-square)
