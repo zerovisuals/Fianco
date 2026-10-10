@@ -16,17 +16,27 @@ export const DEPTH: Record<Strength, number> = { fast: 12, standard: 16, deep: 2
 class BrowserEngine {
   private w: Worker;
   private onLine: ((l: string) => void) | null = null;
+  private onFail: ((e: Error) => void) | null = null;
+  dead: Error | null = null;
   constructor() {
     this.w = new Worker('/engine/stockfish-17.1-lite-single-03e3232.js');
     this.w.onmessage = (e) => this.onLine?.(String(e.data));
+    this.w.onerror = (e) => { e.preventDefault?.(); this.fail(new Error('The chess engine could not start in this browser.')); };
     this.send('uci'); this.send('setoption name Threads value 1'); this.send('setoption name Hash value 16');
   }
+  private fail(e: Error) { this.dead = e; this.onFail?.(e); }
   send(c: string) { this.w.postMessage(c); }
-  private until(test: (l: string) => boolean, each?: (l: string) => void) {
-    return new Promise<string>((res) => { this.onLine = (l) => { each?.(l); if (test(l)) { this.onLine = null; res(l); } }; });
+  private until(test: (l: string) => boolean, each?: (l: string) => void, ms = 0) {
+    if (this.dead) return Promise.reject(this.dead);
+    return new Promise<string>((res, rej) => {
+      const t = ms ? setTimeout(() => this.fail(new Error('The chess engine did not answer.')), ms) : 0;
+      this.onFail = (e) => { clearTimeout(t); this.onLine = null; rej(e); };
+      this.onLine = (l) => { each?.(l); if (test(l)) { clearTimeout(t); this.onLine = null; this.onFail = null; res(l); } };
+    });
   }
-  async ready() { const p = this.until((l) => l === 'readyok'); this.send('isready'); await p; }
-  async analyse(fen: string, depth: number, multipv: number, searchmoves?: string) {
+  /** Resolves once the engine has loaded its WASM and answered; fails after a timeout instead of hanging. */
+  async ready(ms = 30000) { const p = this.until((l) => l === 'readyok', undefined, ms); this.send('isready'); await p; }
+  async analyse(fen: string, depth: number, multipv: number, searchmoves?: string, onDepth?: (d: number) => void) {
     this.send('ucinewgame');
     this.send(`setoption name MultiPV value ${multipv}`);
     await this.ready();
@@ -34,6 +44,7 @@ class BrowserEngine {
     const done = this.until((l) => l.startsWith('bestmove'), (l) => {
       if (!l.startsWith('info ') || !l.includes(' pv ') || /lowerbound|upperbound/.test(l)) return;
       const t = l.split(' '), at = (k: string) => t[t.indexOf(k) + 1];
+      onDepth?.(Number(at('depth')) || 0);
       lines.set(Number(at('multipv') ?? 1), { score: t.includes('mate') ? { mate: Number(at('mate')) } : { cp: Number(at('cp')) }, pv: t.slice(t.indexOf('pv') + 1, t.indexOf('pv') + 9) });
     });
     this.send(`position fen ${fen}`); this.send(`go depth ${depth}${searchmoves ? ` searchmoves ${searchmoves}` : ''}`);
@@ -41,6 +52,14 @@ class BrowserEngine {
     return [...lines.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v);
   }
   stop() { this.w.terminate(); }
+}
+
+/** Each engine holds its own WASM heap, so phones and low-memory machines get fewer of them. */
+function engineCount() {
+  const cores = navigator.hardwareConcurrency || 2;
+  const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4;
+  const mobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  return Math.max(1, Math.min(mobile ? 2 : 6, cores - 1, Math.floor(mem)));
 }
 
 let bookP: Promise<Set<string>> | null = null;
@@ -66,25 +85,32 @@ export async function analyzePgn(pgn: string, opts: { strength: Strength; onProg
     if (new Chess(fen).isGameOver()) break;
   }
   const plies: Ply[] = new Array(fens.length);
-  const workers = Array.from({ length: Math.max(1, Math.min(6, (navigator.hardwareConcurrency || 2) - 1)) }, () => new BrowserEngine());
+  // Start the engines; keep the ones that load. Only fail if none do.
+  const started = Array.from({ length: engineCount() }, () => new BrowserEngine());
+  const alive = (await Promise.allSettled(started.map((e) => e.ready(20000)))).flatMap((r, i) => (r.status === 'fulfilled' ? [started[i]] : (started[i].stop(), [])));
+  if (!alive.length) throw new Error('The chess engine could not start in this browser. Try Chrome or Firefox, or turn off strict blocking for this site.');
   let next = 0, done = 0;
+  const partial = new Map<BrowserEngine, number>();
+  const report = () => opts.onProgress(Math.min(1, (done + [...partial.values()].reduce((a, b) => a + b, 0)) / fens.length));
   const job = async (engine: BrowserEngine) => {
     for (let i = next++; i < fens.length; i = next++) {
       if (opts.signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
       const fen = fens[i], board = new Chess(fen);
       if (board.isGameOver()) { plies[i] = { fen, over: true, mate: board.isCheckmate() }; }
       else {
-        const lines = await engine.analyse(fen, depth, 2);
+        const lines = await engine.analyse(fen, depth, 2, undefined, (d) => { partial.set(engine, 0.9 * d / depth); report(); });
         const uci = i < hist.length ? hist[i].lan : null;
         // Score the played move from this root at the same depth, so best and played are compared like for like.
         let playedScore = uci ? lines.find((l) => l.pv[0] === uci)?.score : undefined;
         if (uci && !playedScore) playedScore = (await engine.analyse(fen, depth, 1, uci))[0]?.score;
         plies[i] = { fen, lines, played: uci ? { uci, san: hist[i].san } : null, playedScore };
       }
-      opts.onProgress(++done / fens.length);
+      partial.delete(engine); done++; report();
     }
   };
-  try { await Promise.all(workers.map(job)); } finally { workers.forEach((w) => w.stop()); }
+  const onAbort = () => alive.forEach((w) => w.stop());
+  opts.signal?.addEventListener('abort', onAbort);
+  try { await Promise.all(alive.map(job)); } finally { opts.signal?.removeEventListener('abort', onAbort); alive.forEach((w) => w.stop()); }
 
   const realW = Number(tag(pgn, 'WhiteElo')) || null, realB = Number(tag(pgn, 'BlackElo')) || null;
   const elos = { w: realW ?? 1500, b: realB ?? 1500 };
