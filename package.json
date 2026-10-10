@@ -1,7 +1,7 @@
 {
-  "name": "chess-review",
+  "name": "fianco",
   "version": "1.0.0",
-  "description": "",
+  "description": "Free, unlimited chess game review that runs in your browser.",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.5",
@@ -29,5 +29,7 @@
     "protobufjs": "^7.6.6",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
-  }
+  },
+  "repository": "github:zerovisuals/Fianco",
+  "homepage": "https://fianco.app"
 }

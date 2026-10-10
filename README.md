@@ -13,6 +13,7 @@ Free, unlimited chess game review that runs in your browser.
 ![engine](https://img.shields.io/badge/engine-Stockfish%2017.1%20WASM-0b0b0b?style=flat-square)
 ![runs](https://img.shields.io/badge/runs-in%20your%20browser-0b0b0b?style=flat-square)
 ![stack](https://img.shields.io/badge/React%20·%20Vite%20·%20TypeScript-0b0b0b?style=flat-square)
+![license](https://img.shields.io/badge/license-GPL--3.0-0b0b0b?style=flat-square)
 
 <a href="https://fianco.app"><img src="docs/hero.png" alt="Fianco landing page" width="100%" /></a>
 
@@ -144,8 +145,13 @@ Reviewing a game stays free. Always.
 ## Credits
 
 - [Stockfish](https://stockfishchess.org) (GPL-3.0), via [stockfish.js](https://github.com/nmrugg/stockfish.js)
-- Piece sets from [Lichess](https://github.com/lichess-org/lila): cburnett (GPL-2.0+), maestro, staunty and california (CC BY-NC-SA 4.0)
+- Piece sets via [Lichess](https://github.com/lichess-org/lila): celtic by [Maurizio Monge](https://github.com/maurimo/chess-art) (MIT), merida by Armando Hernandez Marroquin (GPL-2.0+), chessnut by [Alexis Luengas](https://github.com/LexLuengas/chessnut-pieces) (Apache-2.0), cburnett by Colin M.L. Burnett (GPL-2.0+)
 - Opening names: [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0)
 - [chess.js](https://github.com/jhlywa/chess.js), [Motion](https://motion.dev), [Phosphor Icons](https://phosphoricons.com), [Geist](https://vercel.com/font)
+
+## Licence
+
+Fianco is free software under the [GNU General Public License v3.0](LICENSE). You can use, study, share and change it;
+if you distribute a modified version, it has to stay under the same licence.
 
 <sub>Fianco is an independent project and is not affiliated with chess.com or Lichess.</sub>

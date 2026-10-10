@@ -82,7 +82,7 @@ function ReviewView({ review }: { review: Review }) {
   const [flipped, setFlipped] = useState(review.meta?.me === 'b');
   const [focus, setFocus] = useState<Label | null>(null);
   const [showNumbers, setShowNumbers] = useState(false);
-  const pieceSet = 'maestro';
+  const pieceSet = 'celtic';
   const n = review.moves.length;
   const go = useCallback((i: number) => setPly(Math.max(-1, Math.min(n - 1, i))), [n]);
   const nextKey = useCallback((label?: Label) => {

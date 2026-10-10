@@ -1,6 +1,6 @@
 import type { Label } from './labels';
 
-export const pieceSrc = (p: string, set = 'maestro') => `/pieces/${set}/${p === p.toUpperCase() ? 'w' : 'b'}${p.toUpperCase()}.svg`;
+export const pieceSrc = (p: string, set = 'celtic') => `/pieces/${set}/${p === p.toUpperCase() ? 'w' : 'b'}${p.toUpperCase()}.svg`;
 
 export function parseFen(fen: string): (string | null)[][] {
   return fen.split(' ')[0].split('/').map((r) => { const o: (string | null)[] = []; for (const ch of r) /\d/.test(ch) ? o.push(...Array(+ch).fill(null)) : o.push(ch); return o; });
