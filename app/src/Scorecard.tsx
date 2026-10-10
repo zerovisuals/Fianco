@@ -37,7 +37,7 @@ export function Scorecard({ review, onFocus, focus, onJump }: { review: Review; 
           const p = c === 'w' ? review.white : review.black;
           return (
             <div className={`sc-player ${c}`} key={c}>
-              <div className="sc-name"><span className={`chip ${c}`} />{p.name}{p.elo > 0 && <span className="sc-elo">{p.elo}</span>}</div>
+              <div className="sc-name"><span className={`chip ${c}`} />{p.title && <span className="title-chip">{p.title}</span>}{p.name}{p.elo > 0 && <span className="sc-elo">{p.elo}</span>}</div>
               <div className="sc-acc"><CountUp value={review.accuracy[c]} /></div>
               <div className="sc-sub">accuracy</div>
               <div className="sc-rating"><span>Game rating</span><b title={review.ratingEst?.[c]?.approx ? 'No ratings in this PGN: estimate from accuracy only' : 'Estimated from accuracy and both ratings'}>{review.ratingEst?.[c] ? <>{review.ratingEst[c]!.approx ? '≈' : ''}<CountUp value={review.ratingEst[c]!.value} digits={0} /></> : '-'}</b></div>

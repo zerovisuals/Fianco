@@ -19,6 +19,32 @@ function replyText(m: Move): string | null {
   } catch { return null; }
 }
 
+const VAL: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+const material = (fen: string, side: 'w' | 'b') => [...fen.split(' ')[0]].reduce((a, ch) => {
+  const v = VAL[ch.toLowerCase()]; if (v === undefined) return a;
+  return a + ((ch === ch.toUpperCase() ? 'w' : 'b') === side ? v : -v);
+}, 0);
+
+/** What the engine's best move would have done, in words: mate, winning a piece, or just "stronger". */
+function bestText(m: Move): string {
+  const c = new Chess(m.fen);
+  try {
+    const mv = c.move({ from: m.best.slice(0, 2), to: m.best.slice(2, 4), promotion: m.best[4] });
+    if (c.isCheckmate()) return `${mv.san} was mate.`;
+    // epBest of 1 means the engine saw a forced mate for the mover.
+    if (m.epBest >= 0.999) return `${mv.san} starts a forced mate.`;
+    if (mv.captured) return `${mv.san} wins the ${NAME[mv.captured]}.`;
+    return `${mv.san} would have punished it.`;
+  } catch { return `${m.bestSan} was better.`; }
+}
+
+/** Material the mover is down after the opponent's best reply line (positive = lost). */
+function materialLost(m: Move): number {
+  const c = new Chess(m.fenAfter);
+  for (const u of (m.reply ?? []).slice(0, 6)) { try { c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] }); } catch { break; } }
+  return material(m.fen, m.color) - material(c.fen(), m.color);
+}
+
 export function explain(m: Move): { headline: string; why: string[]; numbers: string } {
   const why: string[] = [];
   const reply = replyText(m);
@@ -35,12 +61,18 @@ export function explain(m: Move): { headline: string; why: string[]; numbers: st
     case 'excellent': case 'good': why.push(`Almost as strong as ${m.bestSan}.`); break;
     case 'miss':
       why.push('Your opponent’s last move was a mistake.');
-      why.push(`${m.bestSan} would have punished it.`);
+      why.push(bestText(m));
       break;
-    case 'inaccuracy': case 'mistake': case 'blunder':
+    case 'inaccuracy': case 'mistake': case 'blunder': {
       if (reply) why.push(reply);
-      why.push(`${m.bestSan} was better.`);
+      why.push(m.epBest >= 0.999 && m.label !== 'inaccuracy' ? bestText(m) : `${m.bestSan} was better.`);
+      // A big material loss with a mild label: the game was already decided, so the win chance barely moved.
+      if (m.label !== 'blunder' && materialLost(m) >= 3) {
+        if (m.epBest < 0.2) why.push('You were already lost, so it changes little.');
+        else if (m.epPlayed > 0.8) why.push('You stay clearly winning, so it costs little.');
+      }
       break;
+    }
   }
   const b = config.bands;
   const band = m.label === 'brilliant' || m.label === 'great' || m.label === 'miss' || m.label === 'book' || m.label === 'forced'

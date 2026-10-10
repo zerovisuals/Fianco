@@ -1,8 +1,8 @@
-// Quiet move sounds (CC0 recordings from Kenney, see public/sounds/LICENSE.txt), played through Web Audio
+// Quiet move sounds (CC0 recordings from Freesound, see public/sounds/LICENSE.txt), played through Web Audio
 // so rapid stepping through moves doesn't lag or cut off.
 const FILES = { move1: 'move-1', move2: 'move-2', capture: 'capture', brilliant: 'brilliant' } as const;
 type Name = keyof typeof FILES;
-const VOLUME: Record<Name, number> = { move1: 0.35, move2: 0.35, capture: 0.4, brilliant: 0.22 };
+const VOLUME: Record<Name, number> = { move1: 0.4, move2: 0.4, capture: 0.45, brilliant: 0.3 };
 const KEY = 'fianco:sound';
 
 let ctx: AudioContext | null = null;
@@ -30,10 +30,13 @@ async function play(name: Name, delay = 0) {
   src.start(ctx.currentTime + delay);
 }
 
-/** Sound for stepping onto a move: a wood knock (heavier on captures), plus a soft chime on a Brilliant. */
+/** Sound for stepping onto a move: a real piece tap (a double tap on captures), plus a struck glass on a Brilliant. */
 export function moveSound(san: string, label: string) {
   if (!soundOn()) return;
   if (san.includes('x')) play('capture');
   else { play(alt ? 'move2' : 'move1'); alt = !alt; }
   if (label === 'brilliant') play('brilliant', 0.12);
 }
+
+/** The Brilliant chime on its own (for a tried move once the engine has labelled it). */
+export function chime() { if (soundOn()) play('brilliant'); }

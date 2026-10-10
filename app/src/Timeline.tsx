@@ -1,3 +1,4 @@
+import type { Ending } from './engine/ending';
 import { useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { LABELS, KEY, type Label } from './labels';
@@ -12,7 +13,7 @@ const winp = (e: number) => (Math.abs(e) >= 9000 ? (e > 0 ? 1 : 0) : 1 / (1 + Ma
  * Move list with the evaluation drawn vertically beside it, aligned ply by ply:
  * the swing sits next to the move that caused it.
  */
-export function Timeline({ moves, ply, onPick, focus }: { moves: Move[]; ply: number; onPick: (i: number) => void; focus: Label | null }) {
+export function Timeline({ moves, ply, onPick, focus, ending }: { moves: Move[]; ply: number; onPick: (i: number) => void; focus: Label | null; ending?: Ending | null }) {
   const reduce = useReducedMotion();
   const listRef = useRef<HTMLDivElement>(null);
   const rows = Math.ceil(moves.length / 2);
@@ -67,6 +68,7 @@ export function Timeline({ moves, ply, onPick, focus }: { moves: Move[]; ply: nu
               })}
             </div>
           ))}
+          {ending && <div className="tl-end"><b>{ending.winner === 'w' ? '1-0' : ending.winner === 'b' ? '0-1' : '½-½'}</b>{ending.text}</div>}
         </div>
       </div>
     </div>

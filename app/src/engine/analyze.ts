@@ -3,7 +3,8 @@ import { Chess } from 'chess.js';
 import { config } from '../../../core/config.ts';
 import { movesFromPlies, classify, accuracy, gameRating, type Ply, type Score } from '../../../core/review.ts';
 import { buildBook, epd } from '../../../core/book.ts';
-import type { Review } from '../types';
+import type { Review, Move } from '../types';
+import { ending } from './ending';
 
 export type Strength = 'fast' | 'standard' | 'deep';
 export const DEPTH: Record<Strength, number> = { fast: 12, standard: 16, deep: 20 };
@@ -119,7 +120,7 @@ export async function analyzePgn(pgn: string, opts: { strength: Strength; onProg
   const elos = { w: realW ?? 1500, b: realB ?? 1500 };
   const moves = classify(movesFromPlies(plies), elos, config, (f) => book.has(epd(f)));
   return {
-    white: { name: tag(pgn, 'White') || 'White', elo: realW ?? 0 }, black: { name: tag(pgn, 'Black') || 'Black', elo: realB ?? 0 },
+    white: { name: tag(pgn, 'White') || 'White', elo: realW ?? 0, title: tag(pgn, 'WhiteTitle') || null }, black: { name: tag(pgn, 'Black') || 'Black', elo: realB ?? 0, title: tag(pgn, 'BlackTitle') || null },
     startFen: moves[0]?.fen ?? new Chess().fen(),
     moves: moves.map((m, i) => ({
       san: m.san, uci: m.uci, color: m.color, fen: m.fen, fenAfter: m.fenAfter, label: m.label, sub: m.sub,
@@ -133,8 +134,39 @@ export async function analyzePgn(pgn: string, opts: { strength: Strength; onProg
       b: gameRating(accuracy(moves, 'b', config), realB, realW, config),
     },
     phaseAccuracy: { w: [0, 1, 2].map((p) => accuracy(moves, 'w', config, p as 0 | 1 | 2)), b: [0, 1, 2].map((p) => accuracy(moves, 'b', config, p as 0 | 1 | 2)) },
-    meta: { result: tag(pgn, 'Result'), date: tag(pgn, 'Date'), timeControl: tag(pgn, 'TimeControl'), strength: opts.strength, depth, site: tag(pgn, 'Site') },
+    meta: { result: tag(pgn, 'Result'), date: tag(pgn, 'Date'), timeControl: tag(pgn, 'TimeControl'), strength: opts.strength, depth, site: tag(pgn, 'Site'),
+      ending: ending(tag(pgn, 'Result'), tag(pgn, 'Termination'), hist[hist.length - 1].after, { w: tag(pgn, 'White') || 'White', b: tag(pgn, 'Black') || 'Black' }) },
   };
+}
+
+/**
+ * "What if": label one move you try on the board, with the same classifier as the review.
+ * One engine is kept warm for this and calls run one after another.
+ */
+let explorer: BrowserEngine | null = null;
+let exploreQueue: Promise<unknown> = Promise.resolve();
+export function exploreMove(fen: string, uci: string, elo: number, depth: number): Promise<Move> {
+  const task = exploreQueue.then(async () => {
+    if (!explorer || explorer.dead) { explorer = new BrowserEngine(); await explorer.ready(20000); }
+    const e = explorer, book = await loadBook();
+    const board = new Chess(fen);
+    const mv = board.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+    const after = board.fen();
+    const lines = await e.analyse(fen, depth, 2);
+    const playedScore = lines.find((l) => l.pv[0] === mv.lan)?.score ?? (await e.analyse(fen, depth, 1, mv.lan))[0]?.score;
+    const next: Ply = board.isGameOver() ? { fen: after, over: true, mate: board.isCheckmate() } : { fen: after, lines: await e.analyse(after, depth, 1) };
+    const plies: Ply[] = [{ fen, lines, played: { uci: mv.lan, san: mv.san }, playedScore }, next];
+    const color = fen.split(' ')[1] as 'w' | 'b';
+    const [m] = classify(movesFromPlies(plies), { w: elo, b: elo }, config, (f) => book.has(epd(f)));
+    return {
+      san: m.san, uci: m.uci, color, fen, fenAfter: after, label: m.label, sub: m.sub,
+      best: m.best.uci, bestSan: san(fen, m.best.uci), bestLine: pvSan(fen, lines[0]?.pv ?? []),
+      reply: m.reply ?? [], evalWhite: whiteCp(m.played.score, color), phase: m.phase, loss: m.loss,
+      epBest: m.epBest, epPlayed: m.epPlayed, elo, prevLoss: 0,
+    } satisfies Move;
+  });
+  exploreQueue = task.catch(() => {});
+  return task;
 }
 
 /** Recent games from chess.com's public API (read-only). */
@@ -156,7 +188,12 @@ export async function chesscomGames(user: string) {
   return games.slice(0, 30);
 }
 
-/** chess.com avatar URL (public API). The image host sends CORP: cross-origin, so it loads under COEP. */
-export async function chesscomAvatar(user: string): Promise<string | null> {
-  try { const r = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(user.toLowerCase())}`); return r.ok ? ((await r.json()).avatar ?? null) : null; } catch { return null; }
+/** chess.com avatar URL and title (GM, IM, ...) from the public API. The image host sends CORP: cross-origin, so it loads under COEP. */
+export async function chesscomProfile(user: string): Promise<{ avatar: string | null; title: string | null }> {
+  try {
+    const r = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(user.toLowerCase())}`);
+    if (!r.ok) return { avatar: null, title: null };
+    const j = await r.json();
+    return { avatar: j.avatar ?? null, title: j.title ?? null };
+  } catch { return { avatar: null, title: null }; }
 }

@@ -1,9 +1,9 @@
-Sound effects in this folder are from Kenney's "Impact Sounds" and "Interface Sounds"
-packs (www.kenney.nl), released under Creative Commons Zero (CC0 1.0):
-http://creativecommons.org/publicdomain/zero/1.0/
+Sound effects in this folder are cut from recordings on Freesound, all released under
+Creative Commons Zero (CC0 1.0, public domain): http://creativecommons.org/publicdomain/zero/1.0/
 
-move-1.mp3   impactWood_light_000
-move-2.mp3   impactWood_light_002
-capture.mp3  impactWood_medium_002
-brilliant.mp3 confirmation_002
-(trimmed and loudness-normalised)
+move-1.mp3, move-2.mp3, capture.mp3
+  "Chess Pieces Move (Close)" by JJTaynos  https://freesound.org/s/733927/
+  (single taps cut from the recording; capture.mp3 layers two taps 35 ms apart)
+brilliant.mp3
+  "glass middle" by platomica  https://freesound.org/s/787905/
+  (first strike, trimmed with a fade)

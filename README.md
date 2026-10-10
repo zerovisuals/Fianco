@@ -146,7 +146,7 @@ Reviewing a game stays free. Always.
 
 - [Stockfish](https://stockfishchess.org) (GPL-3.0), via [stockfish.js](https://github.com/nmrugg/stockfish.js)
 - Piece sets via [Lichess](https://github.com/lichess-org/lila): celtic by [Maurizio Monge](https://github.com/maurimo/chess-art) (MIT), merida by Armando Hernandez Marroquin (GPL-2.0+), chessnut by [Alexis Luengas](https://github.com/LexLuengas/chessnut-pieces) (Apache-2.0), cburnett by Colin M.L. Burnett (GPL-2.0+)
-- Move sounds from [Kenney](https://kenney.nl) (CC0)
+- Move sounds: "Chess Pieces Move (Close)" by [JJTaynos](https://freesound.org/s/733927/) and "glass middle" by [platomica](https://freesound.org/s/787905/) on Freesound (CC0)
 - Opening names: [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0)
 - [chess.js](https://github.com/jhlywa/chess.js), [Motion](https://motion.dev), [Phosphor Icons](https://phosphoricons.com), [Geist](https://vercel.com/font)
 
