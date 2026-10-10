@@ -1,7 +1,8 @@
 import './review.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { CaretLeft, CaretRight, CaretDoubleLeft, CaretDoubleRight, Lightning, ArrowsDownUp, MagnifyingGlass, Info } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, CaretDoubleLeft, CaretDoubleRight, Lightning, ArrowsDownUp, MagnifyingGlass, Info, SpeakerHigh, SpeakerSlash } from '@phosphor-icons/react';
+import { moveSound, soundOn, setSoundOn } from './sound';
 import { Board, EvalBar, type Arrow } from './Board';
 import { Timeline } from './Timeline';
 import { Scorecard } from './Scorecard';
@@ -85,6 +86,14 @@ function ReviewView({ review }: { review: Review }) {
   const pieceSet = 'celtic';
   const n = review.moves.length;
   const go = useCallback((i: number) => setPly(Math.max(-1, Math.min(n - 1, i))), [n]);
+  const [sound, setSound] = useState(soundOn);
+  const lastPly = useRef(ply);
+  useEffect(() => {
+    if (ply === lastPly.current) return;
+    lastPly.current = ply;
+    const m = ply >= 0 ? review.moves[ply] : null;
+    if (m) moveSound(m.san, m.label);
+  }, [ply, review]);
   const nextKey = useCallback((label?: Label) => {
     const want = (l: Label) => (label ? l === label : KEY.includes(l));
     const i = review.moves.findIndex((m, k) => k > ply && want(m.label));
@@ -158,6 +167,7 @@ function ReviewView({ review }: { review: Review }) {
             <button onClick={() => go(ply + 1)} aria-label="Next move"><CaretRight size={18} weight="bold" /></button>
             <button onClick={() => go(n - 1)} aria-label="Last move"><CaretDoubleRight size={18} weight="bold" /></button>
             <button onClick={() => setFlipped((f) => !f)} aria-label="Flip board"><ArrowsDownUp size={18} weight="bold" /></button>
+            <button onClick={() => { setSoundOn(!sound); setSound(!sound); }} aria-label={sound ? 'Mute move sounds' : 'Turn on move sounds'} aria-pressed={sound}>{sound ? <SpeakerHigh size={18} weight="bold" /> : <SpeakerSlash size={18} weight="bold" />}</button>
           </nav>
         </div>
       </section>
