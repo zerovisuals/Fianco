@@ -15,7 +15,7 @@ function replyText(m: Move): string | null {
     if (c.isCheckmate()) return `${mv.san} is mate.`;
     if (m.epPlayed <= 0.001) return `${mv.san} starts a forced mate.`;
     // "Wins" only when the material really stays won along the engine's line, not for a trade.
-    if (mv.captured && materialLost(m) >= VAL[mv.captured] - 1) return `${mv.san} wins the ${NAME[mv.captured]}.`;
+    if (mv.captured && materialLost(m, true) >= VAL[mv.captured] - 1) return `${mv.san} wins the ${NAME[mv.captured]}.`;
     if (c.inCheck()) return `${mv.san} comes with check.`;
     return `The best answer is ${mv.san}.`;
   } catch { return null; }
@@ -46,11 +46,14 @@ function bestConcrete(m: Move): string | null {
 }
 const bestText = (m: Move) => bestConcrete(m) ?? `${m.bestSan} would have punished it.`;
 
-/** Material the mover is down after the opponent's best reply line (positive = lost). */
-function materialLost(m: Move): number {
+/**
+ * Material the mover is down after the opponent's best reply line (positive = lost).
+ * `fromAfter` measures from after the move itself, so a pawn the move grabbed doesn't hide the queen it hangs.
+ */
+function materialLost(m: Move, fromAfter = false): number {
   const c = new Chess(m.fenAfter);
   for (const u of (m.reply ?? []).slice(0, 6)) { try { c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] }); } catch { break; } }
-  return material(m.fen, m.color) - material(c.fen(), m.color);
+  return material(fromAfter ? m.fenAfter : m.fen, m.color) - material(c.fen(), m.color);
 }
 
 export function explain(m: Move): { headline: string; why: string[]; numbers: string } {

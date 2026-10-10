@@ -1,11 +1,27 @@
 // UCI wrapper around the Stockfish 17.1 NNUE WASM build, for headless corpus runs.
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 export type Score = { cp?: number; mate?: number };
 export type Line = { multipv: number; depth: number; score: Score; pv: string[] };
 
 const ENGINE = fileURLToPath(new URL('../node_modules/stockfish/src/stockfish-17.1-8e4d048.js', import.meta.url));
+/**
+ * The exact build the website runs (single-threaded lite NNUE). It can't find its .wasm under a path
+ * with spaces, so it runs from a copy in the temp folder.
+ */
+export const SITE_ENGINE = (() => {
+  const name = 'stockfish-17.1-lite-single-03e3232', dir = join(tmpdir(), 'fianco-engine');
+  mkdirSync(dir, { recursive: true });
+  for (const ext of ['.js', '.wasm']) {
+    const dst = join(dir, name + ext);
+    if (!existsSync(dst)) copyFileSync(fileURLToPath(new URL(`../app/public/engine/${name}${ext}`, import.meta.url)), dst);
+  }
+  return join(dir, name + '.js');
+})();
 
 export class Engine {
   private p: ChildProcessWithoutNullStreams;
@@ -13,8 +29,8 @@ export class Engine {
   private waiters: Array<{ test: (l: string) => boolean; resolve: (l: string) => void }> = [];
   private listeners: Array<(l: string) => void> = [];
 
-  constructor(threads = 4, hashMb = 256) {
-    this.p = spawn(process.execPath, [ENGINE], { stdio: 'pipe' });
+  constructor(threads = 4, hashMb = 256, path = ENGINE) {
+    this.p = spawn(process.execPath, [path], { stdio: 'pipe' });
     this.p.stdout.on('data', (d: Buffer) => {
       this.buf += d.toString();
       let i;

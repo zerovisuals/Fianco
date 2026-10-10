@@ -130,7 +130,11 @@ export function movesFromPlies(plies: Ply[]): MoveEval[] {
 }
 
 // ---------- classification ----------
-export function classify(moves: MoveEval[], elos: Record<Color, number>, cfg: Config, isBook: (fen: string) => boolean): MoveReview[] {
+/** The bits of the previous move the rules look at (Miss, Great, recapture). */
+export type PrevMove = Pick<MoveReview, 'color' | 'loss' | 'epBest' | 'uci' | 'san'>;
+
+/** `before` seeds the previous move when classifying a fragment (e.g. a move tried on the board). */
+export function classify(moves: MoveEval[], elos: Record<Color, number>, cfg: Config, isBook: (fen: string) => boolean, before?: PrevMove | null): MoveReview[] {
   const out: MoveReview[] = [];
   const bookOpen = { w: true, b: true };
   let phase: 0 | 1 | 2 = 0;
@@ -171,7 +175,7 @@ export function classify(moves: MoveEval[], elos: Record<Color, number>, cfg: Co
     if (label === 'blunder' && !losesMaterial && !allowsMate) label = 'mistake';
 
     // Miss: the opponent just erred; we had the punishment and let it go without losing material.
-    const prev = out[out.length - 1];
+    const prev: PrevMove | undefined = out[out.length - 1] ?? before ?? undefined;
     if (['inaccuracy', 'mistake', 'blunder'].includes(label) && prev && prev.color !== m.color && prev.loss >= cfg.miss.oppLoss) {
       const gained = epBest - (1 - prev.epBest);  // what the opponent's error handed us
       if (gained >= cfg.miss.recoverable && loss >= cfg.miss.minLoss && !(label === 'blunder' && (losesMaterial || allowsMate))) {

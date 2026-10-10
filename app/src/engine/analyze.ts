@@ -1,7 +1,7 @@
 // In-browser review pipeline: PGN → Stockfish (WASM worker) → core classifier → Review.
 import { Chess } from 'chess.js';
 import { config } from '../../../core/config.ts';
-import { movesFromPlies, classify, accuracy, gameRating, type Ply, type Score } from '../../../core/review.ts';
+import { movesFromPlies, classify, accuracy, gameRating, type Ply, type Score, type PrevMove } from '../../../core/review.ts';
 import { buildBook, epd } from '../../../core/book.ts';
 import type { Review, Move } from '../types';
 import { ending } from './ending';
@@ -145,8 +145,9 @@ export async function analyzePgn(pgn: string, opts: { strength: Strength; onProg
  */
 let explorer: BrowserEngine | null = null;
 let exploreQueue: Promise<unknown> = Promise.resolve();
-export function exploreMove(fen: string, uci: string, elo: number, depth: number): Promise<Move> {
+export function exploreMove(fen: string, uci: string, elo: number, depth: number, prev?: Promise<PrevMove | null> | PrevMove | null): Promise<Move> {
   const task = exploreQueue.then(async () => {
+    const before = await Promise.resolve(prev).catch(() => null);
     if (!explorer || explorer.dead) { explorer = new BrowserEngine(); await explorer.ready(20000); }
     const e = explorer, book = await loadBook();
     const board = new Chess(fen);
@@ -157,7 +158,7 @@ export function exploreMove(fen: string, uci: string, elo: number, depth: number
     const next: Ply = board.isGameOver() ? { fen: after, over: true, mate: board.isCheckmate() } : { fen: after, lines: await e.analyse(after, depth, 1) };
     const plies: Ply[] = [{ fen, lines, played: { uci: mv.lan, san: mv.san }, playedScore }, next];
     const color = fen.split(' ')[1] as 'w' | 'b';
-    const [m] = classify(movesFromPlies(plies), { w: elo, b: elo }, config, (f) => book.has(epd(f)));
+    const [m] = classify(movesFromPlies(plies), { w: elo, b: elo }, config, (f) => book.has(epd(f)), before);
     return {
       san: m.san, uci: m.uci, color, fen, fenAfter: after, label: m.label, sub: m.sub,
       best: m.best.uci, bestSan: san(fen, m.best.uci), bestLine: pvSan(fen, lines[0]?.pv ?? []),

@@ -17,6 +17,7 @@ const cases: { name: string; fen?: string; moves: string; expect: Record<string,
   { name: 'Already a piece up, free queen not taken', fen: 'r1bq1rk1/ppp2ppp/2n5/8/8/2N2N2/PPP2PPP/R1BQ1RK1 b - - 0 10', moves: 'Qd4 h3', expect: { Qd4: 'blunder', h3: 'miss' } },
   { name: 'Losing, opponent hangs the queen with check, not taken', fen: '6k1/5ppp/8/8/8/2q5/5PPP/R5K1 w - - 0 30', moves: 'h3 Qc1+ Kh2', expect: { 'Qc1+': 'blunder', Kh2: 'miss' } },
   { name: 'Losing, opponent hangs the queen, taken (control)', fen: '6k1/5ppp/8/8/8/2q5/5PPP/R5K1 w - - 0 30', moves: 'h3 Qc1+ Rxc1', expect: { Rxc1: 'best' } },
+  { name: 'User report: queen hung on e6, not taken', fen: '8/pp6/b2Qp2p/6pP/P4P2/1qk3P1/4P1B1/6K1 w - - 0 38', moves: 'Qxe6 Qb4', expect: { Qxe6: 'blunder', Qb4: 'miss' } },
   { name: 'Queen and rook up, opponent hangs a knight, quiet move (not a Miss)', fen: '6k1/5ppp/8/3n4/8/8/3Q1PPP/3R2K1 b - - 0 30', moves: 'Kf8 h3', expect: { h3: 'not miss' } },
 ];
 

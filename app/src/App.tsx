@@ -80,7 +80,7 @@ function Analysing({ progress, onCancel }: { progress: number; onCancel: () => v
 }
 
 /* ---------- review ---------- */
-type Tried = { key: number; uci: string; san: string; color: 'w' | 'b'; moveNo: string; fen: string; fenAfter: string; result: Move | null; failed?: boolean };
+type Tried = { key: number; uci: string; san: string; color: 'w' | 'b'; moveNo: string; fen: string; fenAfter: string; result: Move | null; failed?: boolean; pending: Promise<Move | null> };
 let triedKey = 0;
 
 function ReviewView({ review, initialPly = -1 }: { review: Review; initialPly?: number }) {
@@ -135,14 +135,18 @@ function ReviewView({ review, initialPly = -1 }: { review: Review; initialPly?: 
     const c = new Chess(boardFen);
     let mv; try { mv = c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }); } catch { return; }
     const color = mv.color, full = Number(boardFen.split(' ')[5] ?? 1);
-    const t: Tried = { key: ++triedKey, uci: mv.lan, san: mv.san, color, moveNo: `${full}${color === 'w' ? '.' : '…'}`, fen: boardFen, fenAfter: c.fen(), result: null };
+    // Miss and Great depend on the move before: the previous tried move, or the game move we branched from.
+    const prevTried = tried[tried.length - 1];
+    const prev: Promise<Move | null> | Move | null = prevTried ? prevTried.pending : gameCur;
+    const p = color === 'w' ? review.white : review.black;
+    const pending = exploreMove(boardFen, mv.lan, p.elo || 1500, Math.min(review.meta?.depth ?? 16, 16), prev);
+    const t: Tried = { key: ++triedKey, uci: mv.lan, san: mv.san, color, moveNo: `${full}${color === 'w' ? '.' : '…'}`, fen: boardFen, fenAfter: c.fen(), result: null, pending: pending.catch(() => null) };
     setTried((ts) => [...ts, t]);
     moveSound(mv.san, '');
-    const p = color === 'w' ? review.white : review.black;
-    exploreMove(boardFen, mv.lan, p.elo || 1500, Math.min(review.meta?.depth ?? 16, 16))
+    pending
       .then((r) => { setTried((ts) => ts.map((x) => (x.key === t.key ? { ...x, result: r } : x))); if (r.label === 'brilliant') chime(); })
       .catch(() => setTried((ts) => ts.map((x) => (x.key === t.key ? { ...x, failed: true } : x))));
-  }, [review, ply, tried.length, boardFen, go]);
+  }, [review, ply, tried, gameCur, boardFen, go]);
 
   // What the caption, arrows and eval show: the tried move when exploring, else the game move.
   const cur = last ? last.result : gameCur;
