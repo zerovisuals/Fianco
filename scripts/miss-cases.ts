@@ -5,6 +5,7 @@ import { Chess } from 'chess.js';
 import { Engine } from '../core/engine-node.ts';
 import { config } from '../core/config.ts';
 import { movesFromPlies, classify, type Ply } from '../core/review.ts';
+import { explain } from '../app/src/engine/explain.ts';
 
 const depth = Number(process.argv[2] ?? 16);
 const cases: { name: string; fen?: string; moves: string; expect: Record<string, string> }[] = [
@@ -41,6 +42,10 @@ for (const c of cases) {
     const want = c.expect[m.san];
     const ok = !want ? '' : want === 'not miss' ? (m.label !== 'miss' ? ' ok' : ' WRONG') : m.label === want ? ' ok' : ` WRONG (want ${want})`;
     const sc = (s: { cp?: number; mate?: number }) => (s.mate !== undefined ? `M${s.mate}` : String(s.cp));
+    const sanOf = (fen: string, u: string) => { try { return new Chess(fen).move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] }).san; } catch { return u; } };
+    const line = (() => { const g2 = new Chess(m.fen), out: string[] = []; for (const u of plies[m.ply].lines?.[0]?.pv.slice(0, 6) ?? []) { try { out.push(g2.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] }).san); } catch { break; } } return out; })();
+    const why = explain({ ...m, best: m.best.uci, bestSan: sanOf(m.fen, m.best.uci), bestLine: line, evalWhite: 0, elo: 1500 } as never).why.join(' ');
+    console.log(`  ${m.san.padEnd(7)} ${m.label.padEnd(10)} "${why}"`);
     console.log(`  ${m.san.padEnd(7)} ${m.label.padEnd(10)} best ${m.best.uci} ${sc(m.best.score)} played ${sc(m.played.score)} loss ${m.loss.toFixed(3)} epBest ${m.epBest.toFixed(3)}${m.sub ? ` [${m.sub}]` : ''}${ok}`);
   }
 }

@@ -1,4 +1,4 @@
-// Quiet move sounds (CC0 recordings from Freesound, see public/sounds/LICENSE.txt), played through Web Audio
+// Quiet move sounds (see public/sounds/LICENSE.txt for sources and licences), played through Web Audio
 // so rapid stepping through moves doesn't lag or cut off.
 const FILES = { move1: 'move-1', move2: 'move-2', capture: 'capture', brilliant: 'brilliant' } as const;
 type Name = keyof typeof FILES;
@@ -30,7 +30,7 @@ async function play(name: Name, delay = 0) {
   src.start(ctx.currentTime + delay);
 }
 
-/** Sound for stepping onto a move: a real piece tap (a double tap on captures), plus a struck glass on a Brilliant. */
+/** Sound for stepping onto a move: a real piece tap (a double tap on captures), plus a chime on a Brilliant. */
 export function moveSound(san: string, label: string) {
   if (!soundOn()) return;
   if (san.includes('x')) play('capture');

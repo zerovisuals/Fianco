@@ -12,8 +12,10 @@ function replyText(m: Move): string | null {
   const c = new Chess(m.fenAfter);
   try {
     const mv = c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] });
-    if (Math.abs(m.evalWhite) >= 9000 && (m.evalWhite > 0) !== (m.color === 'w')) return `${mv.san} starts a forced mate.`;
-    if (mv.captured) return `${mv.san} wins the ${NAME[mv.captured]}.`;
+    if (c.isCheckmate()) return `${mv.san} is mate.`;
+    if (m.epPlayed <= 0.001) return `${mv.san} starts a forced mate.`;
+    // "Wins" only when the material really stays won along the engine's line, not for a trade.
+    if (mv.captured && materialLost(m) >= VAL[mv.captured] - 1) return `${mv.san} wins the ${NAME[mv.captured]}.`;
     if (c.inCheck()) return `${mv.san} comes with check.`;
     return `The best answer is ${mv.san}.`;
   } catch { return null; }
@@ -25,18 +27,24 @@ const material = (fen: string, side: 'w' | 'b') => [...fen.split(' ')[0]].reduce
   return a + ((ch === ch.toUpperCase() ? 'w' : 'b') === side ? v : -v);
 }, 0);
 
-/** What the engine's best move would have done, in words: mate, winning a piece, or just "stronger". */
-function bestText(m: Move): string {
+/**
+ * What the engine's best move would have done, in words: mate, winning a piece, or null when it's
+ * just "better". Material is counted along the engine's whole line, so a trade never reads as a win.
+ */
+function bestConcrete(m: Move): string | null {
   const c = new Chess(m.fen);
   try {
     const mv = c.move({ from: m.best.slice(0, 2), to: m.best.slice(2, 4), promotion: m.best[4] });
     if (c.isCheckmate()) return `${mv.san} was mate.`;
     // epBest of 1 means the engine saw a forced mate for the mover.
     if (m.epBest >= 0.999) return `${mv.san} starts a forced mate.`;
-    if (mv.captured) return `${mv.san} wins the ${NAME[mv.captured]}.`;
-    return `${mv.san} would have punished it.`;
-  } catch { return `${m.bestSan} was better.`; }
+    for (const san of (m.bestLine ?? []).slice(1)) { try { c.move(san); } catch { break; } }
+    const gain = material(c.fen(), m.color) - material(m.fen, m.color);
+    if (gain >= 2.5) return mv.captured && Math.abs(VAL[mv.captured] - gain) <= 1 ? `${mv.san} wins the ${NAME[mv.captured]}.` : `${mv.san} wins material.`;
+    return null;
+  } catch { return null; }
 }
+const bestText = (m: Move) => bestConcrete(m) ?? `${m.bestSan} would have punished it.`;
 
 /** Material the mover is down after the opponent's best reply line (positive = lost). */
 function materialLost(m: Move): number {
@@ -58,14 +66,18 @@ export function explain(m: Move): { headline: string; why: string[]; numbers: st
     }
     case 'great': why.push('The other moves give away much more. This one keeps the game on track.'); break;
     case 'best': why.push('The engine’s top choice.'); break;
-    case 'excellent': case 'good': why.push(`Almost as strong as ${m.bestSan}.`); break;
+    case 'excellent': case 'good':
+      // Walking into a forced mate in a position that was already lost costs almost nothing in win chance; say so.
+      if (m.epPlayed <= 0.001 && m.epBest > 0) why.push(`It allows a forced mate, but the position was already lost. ${m.bestSan} held out longer.`);
+      else why.push(`Almost as strong as ${m.bestSan}.`);
+      break;
     case 'miss':
       why.push('Your opponent’s last move was a mistake.');
       why.push(bestText(m));
       break;
     case 'inaccuracy': case 'mistake': case 'blunder': {
       if (reply) why.push(reply);
-      why.push(m.epBest >= 0.999 && m.label !== 'inaccuracy' ? bestText(m) : `${m.bestSan} was better.`);
+      why.push(bestConcrete(m) ?? `${m.bestSan} was better.`);
       // A big material loss with a mild label: the game was already decided, so the win chance barely moved.
       if (m.label !== 'blunder' && materialLost(m) >= 3) {
         if (m.epBest < 0.2) why.push('You were already lost, so it changes little.');

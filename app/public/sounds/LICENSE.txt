@@ -1,9 +1,10 @@
-Sound effects in this folder are cut from recordings on Freesound, all released under
-Creative Commons Zero (CC0 1.0, public domain): http://creativecommons.org/publicdomain/zero/1.0/
+Move sounds are cut from Freesound recordings released under Creative Commons Zero (CC0 1.0,
+public domain): http://creativecommons.org/publicdomain/zero/1.0/  The Brilliant sound is AGPLv3+.
 
 move-1.mp3, move-2.mp3, capture.mp3
-  "Chess Pieces Move (Close)" by JJTaynos  https://freesound.org/s/733927/
+  "Chess_foley.mp3" by Amatsuuu  https://freesound.org/s/629181/
   (single taps cut from the recording; capture.mp3 layers two taps 35 ms apart)
 brilliant.mp3
-  "glass middle" by platomica  https://freesound.org/s/787905/
-  (first strike, trimmed with a fade)
+  "GenericNotify" from the Lichess "sfx" sound set by Enigmahack (https://github.com/Enigmahack),
+  licensed AGPLv3 or later: https://github.com/lichess-org/lila/blob/master/COPYING.md
+  (loudness-normalised)
